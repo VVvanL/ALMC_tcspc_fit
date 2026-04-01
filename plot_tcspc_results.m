@@ -1,0 +1,115 @@
+function plot_tcspc_results(t, data, irf, results, use_log)
+% PLOT_TCSPC_RESULTS
+%
+% PURPOSE:
+%   Visualizes TCSPC fit results in a three-panel layout.
+%   Uses fixed positioning to prevent axes from overlapping or being "jumbled."
+
+    % --- 1. Data Sanitization ---
+    t = squeeze(t(:)); 
+    data = squeeze(data(:)); 
+    irf = squeeze(irf(:));
+    
+    n_exp = length(results.taus);
+    dt = t(2) - t(1);
+    T_pulse = t(end) + dt;
+    N = length(t);
+    
+    % --- 2. Model Reconstruction ---
+    irf_f = fft(irf);
+    freq = (0:N-1)'; freq(freq > N/2) = freq(freq > N/2) - N; freq = freq / T_pulse;
+    irf_s = real(ifft(irf_f .* exp(-2j * pi * freq * results.shift)));
+
+    % %%% make sure short tcspc fits are plotted properly, interpolate shift
+    % %%% instead of fft shift
+    % % --- Step A: IRF Shifting ---
+    % use_linear = (N < 250);
+    % if use_linear
+    %     % Use time-domain linear interpolation for small datasets
+    %     irf_s = interp1(t, irf, t - results.shift, 'linear', 0);
+    % else
+    %     % Use FFT Shift Theorem: Multiply by complex phase in frequency domain
+    %     irf_s = real(ifft(irf_f .* exp(-2j * pi * freq * results.shift)));
+    % end
+    % %%%
+    
+    model = zeros(N, 1);
+    for i = 1:n_exp
+        decay = exp(-t/results.taus(i)) / (1 - exp(-T_pulse/results.taus(i)));
+        comp = real(ifft(fft(decay) .* fft(irf_s)));
+        model = model + results.amplitudes(i) * comp;
+    end
+    if isfield(results, 'background'), model = model + results.background; end
+    
+    irf_scaled = irf_s * (max(data) / max(irf_s));
+    residuals = data - model;
+    rel_residuals = residuals ./ max(model, 1);
+
+    % --- 3. Figure Creation ---
+    % Create a wide figure to fit the textbox on the right
+    hFig = figure('Color', 'w', 'Units', 'normalized', 'Position', [0.1, 0.1, 0.7, 0.7]);
+    
+    % Define the horizontal space for the plots (left 65% of the figure)
+    plot_width = 0.60;
+    left_margin = 0.08;
+    
+    % PANEL 1: Data and Fit (Occupies top 55% of the vertical space)
+    ax1 = axes('Position', [left_margin, 0.45, plot_width, 0.45]);
+    hold(ax1, 'on'); grid(ax1, 'on');
+    
+    if use_log
+        semilogy(ax1, t, data, 'k.', 'MarkerSize', 6, 'DisplayName', 'Data');
+        semilogy(ax1, t, irf_scaled, 'Color', [0.7 0.7 0.7], 'DisplayName', 'IRF');
+        semilogy(ax1, t, model, 'r-', 'LineWidth', 2, 'DisplayName', 'Fit');
+        set(ax1, 'YScale', 'log'); % Double-down on log scale
+        ylim(ax1, [max(1, min(data)), max(data)*2]);
+    else
+        plot(ax1, t, data, 'k.', 'DisplayName', 'Data');
+        plot(ax1, t, irf_scaled, 'Color', [0.7 0.7 0.7], 'DisplayName', 'IRF');
+        plot(ax1, t, model, 'r-', 'LineWidth', 2, 'DisplayName', 'Fit');
+    end
+    ylabel(ax1, 'Counts');
+    title(ax1, sprintf('%d-Exponential TCSPC Analysis', n_exp));
+    legend(ax1, 'Location', 'northeast');
+
+    % PANEL 2: Absolute Residuals (Middle 15%)
+    ax2 = axes('Position', [left_margin, 0.26, plot_width, 0.15]);
+    hold(ax2, 'on'); grid(ax2, 'on');
+    plot(ax2, t, residuals, 'Color', [0 0.45 0.74]);
+    plot(ax2, t, zeros(size(t)), 'k--');
+    ylabel(ax2, 'Residue');
+    set(ax2, 'XTickLabel', []); 
+
+    % PANEL 3: Relative Residuals (Bottom 15%)
+    ax3 = axes('Position', [left_margin, 0.07, plot_width, 0.15]);
+    hold(ax3, 'on'); grid(ax3, 'on');
+    plot(ax3, t, rel_residuals, 'Color', [0.85 0.33 0.1]);
+    plot(ax3, t, zeros(size(t)), 'k--');
+    ylabel(ax3, 'Rel. Res.');
+    xlabel(ax3, 'Time (ns)');
+    
+    % Link the axes
+    linkaxes([ax1, ax2, ax3], 'x');
+
+    % --- 4. Parameter Textbox (Right Side) ---
+    err_type = 'Error';
+    if isfield(results, 'error_type_used'), err_type = results.error_type_used; end
+    
+    txt = {['\bf{Results (', err_type, ')}']};
+    txt{end+1} = sprintf('Shift: %.3f ± %.3f ns', results.shift, results.err_vals.shift);
+    for i = 1:n_exp
+        txt{end+1} = sprintf('\\tau_{%d}: %.3f ± %.3f ns', i, results.taus(i), results.err_vals.taus(i));
+        txt{end+1} = sprintf('A_{%d}: %.2e ± %.2e', i, results.amplitudes(i), results.err_vals.amplitudes(i));
+    end
+    
+    if isfield(results.err_vals, 'background') && results.err_vals.background > 0
+        txt{end+1} = sprintf('BG: %.2f ± %.2f', results.background, results.err_vals.background);
+    else
+        txt{end+1} = sprintf('BG: %.2f (Fixed)', results.background);
+    end
+
+    % Fixed position textbox in the right margin (starts at 72%)
+    annotation(hFig, 'textbox', [0.72, 0.45, 0.25, 0.45], 'String', txt, ...
+        'FontSize', 10, 'BackgroundColor', 'w', 'EdgeColor', 'k', ...
+        'FitBoxToText', 'on', 'VerticalAlignment', 'top');
+end
