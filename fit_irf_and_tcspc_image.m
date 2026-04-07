@@ -83,14 +83,16 @@ for i = 1:n_layers
 end
 
 n_exp = length(x0);
-switch n_exp
-    case 1
-        x0 = [r_fitirf.taus',0];   lb = [0.1, x0(3)-0.25];     ub = [10, x0(3)+0.25];
-    case 2
-        x0 = [r_fitirf.taus',0];   lb = [0.1, 1, x0(3)-0.25];  ub = [5, 10, x0(3)+0.25];
-    case 3
-        x0 = [r_fitirf.taus',0];   lb = [0.1, 1, 3, x0(3)-0.25]; ub = [5, 10, 20, x0(3)+0.25];
-end
+% switch n_exp
+%     case 1
+%         x0 = [r_fitirf.taus',0];   lb = [0.1, x0(3)-0.25];     ub = [10, x0(3)+0.25];
+%     case 2
+%         x0 = [r_fitirf.taus',0];   lb = [0.1, 1, x0(3)-0.25];  ub = [5, 10, x0(3)+0.25];
+%     case 3
+%         x0 = [r_fitirf.taus',0];   lb = [0.1, 1, 3, x0(3)-0.25]; ub = [5, 10, 20, x0(3)+0.25];
+% end
+
+x0 = [r_fitirf.taus',0];   lb = [0.1, 1, x0(3)-0.25];  ub = [5, 10, x0(3)+0.25];
 
 total_count_im = sum(im_data_tbin_xybin, 3);
 mask = total_count_im > threshold;

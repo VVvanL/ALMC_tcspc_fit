@@ -6,7 +6,7 @@ dt = 0.025; % size of time bin in ns
 bin_size_xy = 5; % xy bin size in pixels, must be odd
 bin_size_t = 2; % bin size in time direction
 threshold = 5000; % minimum number of photon in TCSPC trace of a pixel so that the pixel will be fitted
-x0 = [4]; % initial life time guess 
+x0 = [4 2]; % initial life time guess 
 x0_irf = [1.3, 0.15, 1.3, 0.3, 0.05, 13.5, 0.2, 0.02, 13.5, 0.3, 0.01];
 fit_bg = true;
 fit_shift = false;
@@ -36,7 +36,7 @@ XYZTC = bf_file_info(strcat(path,file));
 disp(XYZTC);
 
 %% load data
-dataseries = 2;
+dataseries = 1;
 raw_data = bf_load_parts_v7(strcat(path,file),dataseries,-1,-1,-1,-1,-1);
 data = squeeze(raw_data);
 
