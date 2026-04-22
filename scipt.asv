@@ -1,0 +1,206 @@
+% test script 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% set fit parameters
+data = raw_data;
+dt = 0.025;
+bin_size_xy = 5;
+bin_size_t = 4;
+n_exp = 2;
+cost_type = 'MLE';
+fit_bg = true;
+fit_shift = false;
+error_type = '95CI';
+threshold = 10000;
+show_irf_estimate = true;
+
+% turn on parallel pool if available
+if canUseParallelPool
+    pool = gcp('nocreate');
+    if isempty(pool)
+        parpool;
+    end
+end
+
+r_im = autofit_tcspc_image(data, dt, bin_size_xy, bin_size_t, threshold, n_exp, fit_bg, fit_shift, cost_type, error_type, show_irf_estimate);
+
+
+%% plot ratios
+numerator_ind = 1;
+denominator_ind = 2;
+parameter = 'total_counts';
+
+mask = r_im.mask;
+if strcmp(parameter,'total_counts')
+    num = r_im.amplitudes(:,:,numerator_ind).*r_im.taus(:,:,numerator_ind);
+    den = r_im.amplitudes(:,:,denominator_ind).*r_im.taus(:,:,denominator_ind);
+else 
+    num = r_im.(parameter);
+    num = num(:,:,numerator_ind);
+    den = r_im.(parameter);
+    den = den(:,:,denominator_ind);
+end
+
+ratio = zeros(size(den));
+ratio(mask) = num(mask)./den(mask);
+figure;
+imagesc(ratio);
+
+cmap = parula(256);
+cmap(1,:) = [0 0 0]; 
+colormap(cmap);
+
+imagesc(ratio);
+clim([min(ratio(mask)), max(ratio(mask))]); % This clips all values <= 0.3 to the first color (black)
+colorbar;
+
+%% plot fit result in pixel
+i = 26;
+j = 211;
+use_log = true;
+
+if r_im.mask(i,j)
+    pixel_results = get_pixel_results(r_im, i, j);
+    plot_tcspc_results(r_im.t, r_im.raw_data(i,j,:), r_im.irf, pixel_results, use_log)
+else
+    disp('Pixel was not fitted.')
+end
+
+
+%% data output to be saved in ome.tiff files using file
+addpath('bfmatlab');
+javaaddpath('bfmatlab\bioformats_package.jar');
+
+save_fit_data_as_tiff(r_im, data, 'test.ome.tiff')
+
+
+%% data output to be saved in ome.tiff files
+% total counts, fit mask, taus, amplitudes, shift if fitted, background if fitted, error vals of
+% all fitted parameters ratio taus, ratio amplitudes, ratio total_counts
+
+switch n_exp
+    case 1
+        n_datalayers = 3 + n_exp*4 + fit_bg * 2 + fit_shift*2;
+    case 2
+        n_datalayers = 3 + n_exp*4 + fit_bg * 2 + fit_shift*2 + 3;
+    case 3
+        n_datalayers = 3 + n_exp*4 + fit_bg * 2 + fit_shift*2 + 3;
+end
+channel_names = cell(1,n_datalayers);
+
+data_2_tiff = zeros([size(r_im.taus,[1:2]),n_datalayers]);
+
+cl = 1; % keep track of current layer
+
+% total counts
+
+data_2_tiff(:,:,cl) = sum(data,3);
+channel_names{cl} = "total counts";
+cl = cl + 1;
+
+data_2_tiff(:,:,cl) = r_im.total;
+channel_names{cl} = "total counts binned xy";
+cl = cl + 1;
+
+% fit mask
+data_2_tiff(:,:,cl) = r_im.mask;
+channel_names{cl} = "fit mask";
+cl = cl + 1;
+
+% taus
+for i = 1:n_exp
+    data_2_tiff(:,:,cl) = r_im.taus(:,:,i);
+    channel_names{cl} = strcat("lifetime tau",num2str(i)," (ns)");
+    cl = cl + 1;
+end
+
+% amplitudes
+for i = 1:n_exp
+    data_2_tiff(:,:,cl) = r_im.amplitudes(:,:,i);
+    channel_names{cl} = strcat("amplitude ",num2str(i));
+    cl = cl + 1;
+end
+
+% background if fitted
+if fit_bg
+    data_2_tiff(:,:,cl) = r_im.background;
+    channel_names{cl} = "background";
+    cl = cl+1;
+end
+
+% shift, if fitted
+if fit_shift 
+    data_2_tiff(:,:,cl) = r_im.shift;
+    channel_names{cl} = "t0 shift";
+    cl = cl+1;
+end
+
+% tau error vals
+for i = 1:n_exp
+    data_2_tiff(:,:,cl) = r_im.err_vals.taus(:,:,i);
+    channel_names{cl} = strcat("lifetime error tau",num2str(i)," (ns)");
+    cl = cl + 1;
+end
+
+% amplitdue error vals
+for i = 1:n_exp
+    data_2_tiff(:,:,cl) = r_im.err_vals.amplitudes(:,:,i);
+    channel_names{cl} = strcat("amplitude error ",num2str(i));
+    cl = cl + 1;
+end
+
+% background if fitted
+if fit_bg
+    data_2_tiff(:,:,cl) = r_im.err_vals.background;
+    channel_names{cl} = "background error";
+    cl = cl+1;
+end
+
+% shift, if fitted
+if fit_shift 
+    data_2_tiff(:,:,cl) = r_im.err_vals.shift;
+    channel_names{cl} = "t0 shift error";
+    cl = cl+1;
+end
+
+% ratios
+if n_exp>1
+    ratio = zeros(size(r_im.taus,1:2));
+    num = r_im.taus(:,:,1);
+    den = r_im.taus(:,:,2);
+    ratio(r_im.mask) = num(r_im.mask)./den(r_im.mask);
+    data_2_tiff(:,:,cl) = ratio;
+    channel_names{cl} = "ratio liftetime 1 to lifetime 2";
+    cl = cl + 1;
+
+    num = r_im.amplitudes(:,:,1);
+    den = r_im.amplitudes(:,:,2);
+    ratio(r_im.mask) = num(r_im.mask)./den(r_im.mask);
+    data_2_tiff(:,:,cl) = ratio;
+    channel_names{cl} = "ratio amplitude 1 to amplitude 2";
+    cl = cl + 1;
+
+    num = r_im.amplitudes(:,:,1).*r_im.taus(:,:,1);
+    den = r_im.amplitudes(:,:,2).*r_im.taus(:,:,2);
+    ratio(r_im.mask) = num(r_im.mask)./den(r_im.mask);
+    data_2_tiff(:,:,cl) = ratio;
+    channel_names{cl} = "ratio photon counts fit component 1 to fit component 2";
+    cl = cl + 1;
+end
+
+%%
+addpath('bfmatlab');
+javaaddpath('bfmatlab\bioformats_package.jar')
+
+data_32bit = single(data_2_tiff); 
+[h, w, numC] = size(data_32bit); 
+
+metadata = createMinimalOMEXMLMetadata(data_32bit, 'XYCZT');
+
+for i = 0:numC-1
+    chanID = sprintf('Channel:0:%d', i);
+    metadata.setChannelID(chanID, 0, i);
+    metadata.setChannelName(channel_names{i+1}, 0, i);
+end
+
+bfsave(data_32bit, 'final_labeled_image6.ome.tif', 'metadata', metadata);

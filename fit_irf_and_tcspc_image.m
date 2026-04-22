@@ -1,11 +1,12 @@
-function r_im = fit_irf_and_tcspc_image(data, dt, x0, x0_irf, bin_size_xy, bin_size_t, threshold, fit_bg, fit_shift, cost_type, error_type, show_irf_estimate)
+function r_im = fit_irf_and_tcspc_image(data, dt, x0, x0_irf, bin_size_xy,  bin_size_t, n_exp_im_fit, threshold, fit_bg, fit_shift, cost_type, error_type, show_irf_estimate)
 % first fit IRF and TCSPC of total counts together, then fit pixel by pixel
 % in TCSPC image using the optimized IRF
 
 % data: 3d array of TCSPC with x/y/t dimension
 % dt:   size of timebin in t dimension in ns
 % x0:   initial lifetime fit parameter(s). Is either 1x1, 1x2 or 1x3 array,
-%       depending if mono-, bi-, or triexponential fit is wanted
+%       depending if mono-, bi-, or triexponential fit is wanted for
+%       initial fit of total signal which also determines IRF
 % x0_irf:   initial fit parameters for irf. The IRF is simulated by a 1, 2, 
 %           or three gaussians. The first gaussian is defined by the time 
 %           bin position t0 (in ns) and the stdev of the gaussian, the 
@@ -16,6 +17,7 @@ function r_im = fit_irf_and_tcspc_image(data, dt, x0, x0_irf, bin_size_xy, bin_s
 % bin_size_xy:  number of pixels that will be binned together, must be odd,
 %               the binned image still has the same number of pixels
 % bin_size_t:   number of time bins that are binned together
+% n_exp_im_fit: number of exponent in image fit
 % threshold:    minimum counts in of entire TCSPC trace in a pixel after xy 
 %               binning to do TCSPC fit of that pixel
 % fit_bg:   true/false, indicates whether background should be used as fit
@@ -32,7 +34,9 @@ function r_im = fit_irf_and_tcspc_image(data, dt, x0, x0_irf, bin_size_xy, bin_s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % some parameters that usually do not need to be set
 fit_bg_fitirf = true;
-max_t_shift = 1;  %maximum time shift of gaussian position
+max_t_shift = 0.7;  %maximum time shift of gaussian position
+x0_lub_factor = 10; % for gaussian width and amplitude, lb = x0/x0_lub_factor and ub = x0*lub_factor
+min_gw = 0.1; % minimum gaussian width
 
 %% run fit to get irf
 % bin TCSPC data in t dimension and get appropriate t axis
@@ -47,17 +51,21 @@ ub = x0*3;
 
 % set x0_lb and x0_ub
 n_pks = ((length(x0_irf)+1)/3);
-lb_irf = [x0_irf(1)- max_t_shift, 0.5 * x0_irf(2)];
-ub_irf = [x0_irf(1)+ max_t_shift, 2 * x0_irf(2)];
+lb_irf = [x0_irf(1)- max_t_shift, min_gw];
+ub_irf = [x0_irf(1)+ max_t_shift, x0_irf(2)*x0_lub_factor];
 
 if n_pks>1
     for i=2:n_pks
-        lb_irf = [lb_irf, x0_irf(3 + (i-2)*3) - max_t_shift, 0.5 * x0_irf(4 + (i-2)*3), x0_irf(5 + (i-2)*3)/5];
-        ub_irf = [ub_irf, x0_irf(3 + (i-2)*3) + max_t_shift, 2 * x0_irf(4 + (i-2)*3), x0_irf(5 + (i-2)*3)*5];
+        if i<3
+            lb_irf = [lb_irf, x0_irf(3 + (i-2)*3) - max_t_shift, min_gw, x0_irf(5 + (i-2)*3)/x0_lub_factor];
+        else
+            lb_irf = [lb_irf, x0_irf(3 + (i-2)*3) - max_t_shift, 2*min_gw, x0_irf(5 + (i-2)*3)/x0_lub_factor];
+        end
+        ub_irf = [ub_irf, x0_irf(3 + (i-2)*3) + max_t_shift, x0_irf(4 + (i-2)*3)*x0_lub_factor, x0_irf(5 + (i-2)*3)*x0_lub_factor];
     end
 end
 
-[r_fitirf, r_fitirf_fit, irf_fit] = fit_tcspc_gauss_irf_varpro(t_binned, data_xysum_tbin, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg_fitirf, error_type);
+[warning,r_fitirf, r_fitirf_fit, irf_fit] = evalc('fit_tcspc_gauss_irf_varpro(t_binned, data_xysum_tbin, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg_fitirf, error_type)');
 r_im = r_fitirf;
 if show_irf_estimate
     figure;
@@ -83,13 +91,28 @@ for i = 1:n_layers
 end
 
 n_exp = length(x0);
-switch n_exp
+if n_exp > n_exp_im_fit
+    x0 = r_fitirf.taus(1:n_exp_im_fit)';
+elseif n_exp < n_exp_im_fit
+    x0 = r_fitirf.taus';
+    if n_exp == 1 && n_exp_im_fit == 2
+        x0 = [x0, 5];
+    elseif n_exp == 1 && n_exp_im_fit == 3
+        x0 = [x0, 5, 10];
+    elseif n_exp == 2 && n_exp_im_fit == 3
+        x0 = [x0, 10];
+    end
+else
+    x0 = r_fitirf.taus';
+end
+n_exp = n_exp_im_fit;
+switch n_exp_im_fit
     case 1
-        x0 = [r_fitirf.taus',0];   lb = [0.1, x0(3)-0.25];     ub = [10, x0(3)+0.25];
+        x0 = [x0,0];   lb = [0.1, x0(2)-0.25];     ub = [10, x0(2)+0.25];
     case 2
-        x0 = [r_fitirf.taus',0];   lb = [0.1, 1, x0(3)-0.25];  ub = [5, 10, x0(3)+0.25];
+        x0 = [x0,0];   lb = [0.1, 1, x0(3)-0.25];  ub = [5, 10, x0(3)+0.25];
     case 3
-        x0 = [r_fitirf.taus',0];   lb = [0.1, 1, 3, x0(3)-0.25]; ub = [5, 10, 20, x0(3)+0.25];
+        x0 = [x0,0];   lb = [0.1, 1, 3, x0(4)-0.25]; ub = [5, 10, 20, x0(4)+0.25];
 end
 
 total_count_im = sum(im_data_tbin_xybin, 3);
