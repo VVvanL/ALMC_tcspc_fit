@@ -39,7 +39,7 @@ while (select_roi == 1){
     roi_name = Roi.getName;
     run("Duplicate...", "duplicate");
     rename(rootname + "_" + roi_name + ".tif"); crop_name = getTitle();
-    crop_path = anlys_dir + crop_name;
+    crop_path = anlys_dir + File.separator + crop_name;
     save(crop_path); close(crop_name);
 
     roiManager("Deselect");		    
@@ -50,6 +50,6 @@ while (select_roi == 1){
 close(filename);
 
 roiManager("Deselect");
-roi_path = anlys_dir + rootname + "_ROIset.zip"; 
+roi_path = anlys_dir + File.separator + rootname + "_ROIset.zip"; 
 roiManager("Save","" + roi_path);
 roiManager("Reset");
