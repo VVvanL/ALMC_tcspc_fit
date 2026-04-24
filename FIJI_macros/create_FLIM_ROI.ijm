@@ -36,6 +36,8 @@ while (select_roi == 1){
     roiManager("Rename", "roi_" + roi_num);
 
     // create cropped subroi composite image and save
+    selectImage(filename);
+    roiManager("Select", roi_ID);
     roi_name = Roi.getName;
     run("Duplicate...", "duplicate");
     rename(rootname + "_" + roi_name + ".tif"); crop_name = getTitle();
@@ -48,6 +50,7 @@ while (select_roi == 1){
 }
 
 close(filename);
+close("Max_" + filename);
 
 roiManager("Deselect");
 roi_path = anlys_dir + File.separator + rootname + "_ROIset.zip"; 
