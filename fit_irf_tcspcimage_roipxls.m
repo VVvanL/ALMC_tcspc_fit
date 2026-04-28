@@ -60,11 +60,21 @@ grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of pixels
 end % dir loop
 
 %% ===================================scratch Code======================
+[file,path] = uigetfile('*.*','select TCSPC file');
+% get get dimensions of dataseries in file
+[warnings,XYZTC] = evalc('bf_file_info(strcat(path,file))');
+dataseries = 1;
+[warnings, raw_data] = evalc('bf_load_parts_v7(strcat(path,file),dataseries,-1,-1,-1,-1,-1)'); % use evalc to block annoying bioformats warnings
+data = squeeze(raw_data);
+disp('Done')
+
+
 [roi_file, roi_path] = uigetfile('*.*','select TCSPC ROI');
 roi_list = ReadImageJROI([roi_path, roi_file]);
 corners = roi_list{1}.vnRectBounds; % ['nTop', 'nLeft', 'nBottom', 'nRight']
 
 roi_data = data(corners(1):corners(3), corners(2):corners(4),:);
+tcspc_data = squeeze(sum(data,[1,2]));
 
 %% Fit IRF and data with monoexponential fit
 x0 = [1]; lb = [0.1]; ub = [10];
@@ -76,10 +86,10 @@ fit_bg = true;
 error_type = '95CI';
 
 [r_fitirf, r_fitirf_fit, irf_fit] = ...
-    fit_tcspc_gauss_irf_varpro(t, tcspc_trace, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
+    fit_tcspc_gauss_irf_varpro(t, tcspc_data, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
 
 figure; 
-semilogy(t,squeeze(tcspc_trace),'.','DisplayName','data');
+semilogy(t,squeeze(tcspc_data),'.','DisplayName','data');
 hold on;
 semilogy(t,r_fitirf_fit,'DisplayName','fit');
 semilogy(t,irf_fit./max(irf_fit)*max(r_fitirf_fit),'DisplayName','irf');
@@ -87,4 +97,8 @@ hold off
 grid on;
 legend;
 xlabel('time (ns)'); ylabel('counts');title('tcspc histogram of all pixels in mask with monoexponential fit');
-ylim([min([min(r_fitirf_fit) min(data_xy_sum)]) max(r_fitirf_fit)*1.05]);
+ylim([min([min(r_fitirf_fit) min(tcspc_data)]) max(r_fitirf_fit)*1.05]);
+
+% print fit parameters
+disp([char(964), '_1: ',num2str(r_fitirf.taus(1)),' ns ', char(177),' ', num2str(r_fitirf.err_vals.taus(1)),' ns', ...
+    newline, 'background: ',num2str(r_fitirf.background), char(177),' ', num2str(r_fitirf.err_vals.background)]);

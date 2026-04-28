@@ -6,7 +6,7 @@
 
 %% set initial parameters
 dt = 0.025; % size of time bin in ns
-mask_threshold = 40; % count threshold for cell mask
+mask_threshold = 300; % count threshold for cell mask
 
 %%
 % select file
@@ -39,7 +39,7 @@ colorbar;
 hold on;
 red_mask = cat(3, ones(size(mask)), zeros(size(mask)), zeros(size(mask)));
 h_mask = imshow(red_mask);
-opacity = 0.5;
+opacity = 0.4;
 set(h_mask, 'AlphaData', mask * opacity);
 hold off;
 
@@ -65,7 +65,8 @@ cost_type = 'MLE';
 fit_bg = true;
 error_type = '95CI';
 
-[r_fitirf, r_fitirf_fit, irf_fit] = fit_tcspc_gauss_irf_varpro(t, data_xy_sum, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
+[r_fitirf, r_fitirf_fit, irf_fit] = ...
+    fit_tcspc_gauss_irf_varpro(t, tcspc_data, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
 
 % plot decay with IRFs and fit
 figure;
@@ -93,7 +94,8 @@ cost_type = 'MLE';
 fit_bg = true;
 error_type = '95CI';
 
-[r_fitirf, r_fitirf_fit, irf_fit] = fit_tcspc_gauss_irf_varpro(t, data_xy_sum, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
+[r_fitirf, r_fitirf_fit, irf_fit] = ...
+    fit_tcspc_gauss_irf_varpro(t, data_xy_sum, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
 % [warning,r_fitirf, r_fitirf_fit, irf_fit] = evalc('fit_tcspc_gauss_irf_varpro(t, data_xy_sum, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg_fitirf, error_type)');
 
 figure; 
