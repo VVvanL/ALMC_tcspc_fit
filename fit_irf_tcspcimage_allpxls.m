@@ -6,7 +6,7 @@
 
 %% set initial parameters
 dt = 0.025; % size of time bin in ns
-mask_threshold = 100; % count threshold for cell mask
+mask_threshold = 40; % count threshold for cell mask
 
 %%
 % select file

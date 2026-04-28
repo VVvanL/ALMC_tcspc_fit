@@ -29,12 +29,12 @@ for d = 1:dir_n
 
         % generate time axis t
         figure;
-        t = (0:size(roi_data,3)-1)*dt;
+        t = (0:size(im_data,3)-1)*dt;
         % sum up all the pixels in the image
-        tcspc_trace = squeeze(sum(roi_data,[1,2]));
+        tcspc_trace = squeeze(sum(im_data,[1,2]));
         % plot in semilogarithmic plot
         semilogy(t,tcspc_trace);
-        grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of all pixels (ROI)')
+        grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of all pixels')
 
 n_t_bins = size(im_data,3);
 data_xy_sum = zeros(1,1,n_t_bins);
@@ -62,29 +62,4 @@ end % dir loop
 %% ===================================scratch Code======================
 [roi_file, roi_path] = uigetfile('*.*','select TCSPC ROI');
 roi_list = ReadImageJROI([roi_path, roi_file]);
-corners = roi_list{1}.vnRectBounds; % ['nTop', 'nLeft', 'nBottom', 'nRight']
-
-roi_data = data(corners(1):corners(3), corners(2):corners(4),:);
-
-%% Fit IRF and data with monoexponential fit
-x0 = [1]; lb = [0.1]; ub = [10];
-x0_irf = [1.2, 0.15, 1.2, 0.3, 0.05, 13.5, 0.2, 0.02, 13.5, 0.3, 0.02];
-lb_irf = [0.5, 0.1, 0.5, 0.1, 0.005, 12.8, 0.2, 0.002, 12.7, 0.2, 0.002];
-ub_irf = [1.9, 1.5, 1.9, 3.0, 0.500, 14.2, 2.0, 0.20, 14.2, 3.0, 0.20];
-cost_type = 'MLE';
-fit_bg = true;
-error_type = '95CI';
-
-[r_fitirf, r_fitirf_fit, irf_fit] = ...
-    fit_tcspc_gauss_irf_varpro(t, tcspc_trace, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
-
-figure; 
-semilogy(t,squeeze(tcspc_trace),'.','DisplayName','data');
-hold on;
-semilogy(t,r_fitirf_fit,'DisplayName','fit');
-semilogy(t,irf_fit./max(irf_fit)*max(r_fitirf_fit),'DisplayName','irf');
-hold off
-grid on;
-legend;
-xlabel('time (ns)'); ylabel('counts');title('tcspc histogram of all pixels in mask with monoexponential fit');
-ylim([min([min(r_fitirf_fit) min(data_xy_sum)]) max(r_fitirf_fit)*1.05]);
+corners = roi_lins
