@@ -1,6 +1,7 @@
 clearvars; close all
 
 %% set initial parameters
+dataseries = 1; % TCSPC data in .obj file set
 dt = 0.025; % size of time bin in ns
 
 multi = 0; % set to 1 if looping through multiple condition/experimental directories (each with a set of acquisitional subdirectories)
@@ -23,9 +24,16 @@ for d = 1:dir_n
     for s = 1:sub_n
         subname = sublist(s).name; subpath = fullfile(sublist(s).folder,subname,filesep);
         disp(['Processing directory ', subname, '...'])
-        im_list = dir([subpath,'*.tif']); im_n = length(im_list);
-        for im = 1:im_n
-            im_data = tiffreadVolume([subpath, im_list(im).name]);
+        % im_list = dir([subpath,'*.obf']); im_n = length(im_list);
+        im_file = [subpath, subname, '.obf'];       
+            
+        [~ , raw_data] = ...
+            evalc('bf_load_parts_v7(strcat(im_file),dataseries,-1,-1,-1,-1,-1)'); % use evalc to block annoying bioformats warnings
+        im_data = squeeze(raw_data);
+
+        roi_file = [subpath, subname, '_ROIset.zip']; 
+        roi_list = ReadImageJROI(roi_file);
+        corners = roi_list{1}.vnRectBounds; % ['nTop', 'nLeft', 'nBottom', 'nRight']
 
         % generate time axis t
         figure;
@@ -49,7 +57,7 @@ semilogy(t,squeeze(data_xy_sum));
 grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of pixels in mask')
 
 
-        end % image loop
+      
 
 
 
