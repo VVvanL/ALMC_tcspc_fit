@@ -3,6 +3,15 @@ clearvars; close all
 %% set initial parameters
 dataseries = 1; % TCSPC data in .obj file set
 dt = 0.025; % size of time bin in ns
+fit_type = 1;  % 1 for monoexponential; 2 for biexponential
+% monoexponential fit parameters
+x0 = [1]; lb = [0.1]; ub = [10];
+x0_irf = [1.2, 0.15, 1.2, 0.3, 0.05, 13.5, 0.2, 0.02, 13.5, 0.3, 0.02];
+lb_irf = [0.5, 0.1, 0.5, 0.1, 0.005, 12.8, 0.2, 0.002, 12.7, 0.2, 0.002];
+ub_irf = [1.9, 1.5, 1.9, 3.0, 0.500, 14.2, 2.0, 0.20, 14.2, 3.0, 0.20];
+cost_type = 'MLE';
+fit_bg = true;
+error_type = '95CI';
 
 multi = 0; % set to 1 if looping through multiple condition/experimental directories (each with a set of acquisitional subdirectories)
 
@@ -30,31 +39,32 @@ for d = 1:dir_n
         [~ , raw_data] = ...
             evalc('bf_load_parts_v7(strcat(im_file),dataseries,-1,-1,-1,-1,-1)'); % use evalc to block annoying bioformats warnings
         im_data = squeeze(raw_data);
-
+        
+        % get ROI data and segment image data
         roi_file = [subpath, subname, '_ROIset.zip']; 
-        roi_list = ReadImageJROI(roi_file);
+        roi_list = ReadImageJROI(roi_file);  % TODO incorporate into loop to accomidate multiple ROIs
         corners = roi_list{1}.vnRectBounds; % ['nTop', 'nLeft', 'nBottom', 'nRight']
 
+        roi_data = im_data(corners(1):corners(3), corners(2):corners(4),:);
+        tcspc_data = squeeze(sum(roi_data,[1,2]));
+
         % generate time axis t
-        figure;
         t = (0:size(roi_data,3)-1)*dt;
-        % sum up all the pixels in the image
-        tcspc_trace = squeeze(sum(roi_data,[1,2]));
-        % plot in semilogarithmic plot
-        semilogy(t,tcspc_trace);
-        grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of all pixels (ROI)')
+        %% Fit IRF and data
+        if fit_type == 1
+            % monoexponential fit    
+            [r_fitirf, r_fitirf_fit, irf_fit] = ...
+                fit_tcspc_gauss_irf_varpro(t, tcspc_data, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
+        end
 
-n_t_bins = size(im_data,3);
-data_xy_sum = zeros(1,1,n_t_bins);
-for i = 1 : n_t_bins
-    dmy = im_data(:,:,i);
-    data_xy_sum(1,1,i) = sum(dmy(mask),'all');
-end
+        
+        
+        
+        
+        
+  
 
-% plot in semilogarithmic plot
-figure;
-semilogy(t,squeeze(data_xy_sum));
-grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of pixels in mask')
+
 
 
       
@@ -68,33 +78,11 @@ grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of pixels
 end % dir loop
 
 %% ===================================scratch Code======================
-[file,path] = uigetfile('*.*','select TCSPC file');
-% get get dimensions of dataseries in file
-[warnings,XYZTC] = evalc('bf_file_info(strcat(path,file))');
-dataseries = 1;
-[warnings, raw_data] = evalc('bf_load_parts_v7(strcat(path,file),dataseries,-1,-1,-1,-1,-1)'); % use evalc to block annoying bioformats warnings
-data = squeeze(raw_data);
-disp('Done')
 
 
-[roi_file, roi_path] = uigetfile('*.*','select TCSPC ROI');
-roi_list = ReadImageJROI([roi_path, roi_file]);
-corners = roi_list{1}.vnRectBounds; % ['nTop', 'nLeft', 'nBottom', 'nRight']
 
-roi_data = data(corners(1):corners(3), corners(2):corners(4),:);
-tcspc_data = squeeze(sum(data,[1,2]));
 
-%% Fit IRF and data with monoexponential fit
-x0 = [1]; lb = [0.1]; ub = [10];
-x0_irf = [1.2, 0.15, 1.2, 0.3, 0.05, 13.5, 0.2, 0.02, 13.5, 0.3, 0.02];
-lb_irf = [0.5, 0.1, 0.5, 0.1, 0.005, 12.8, 0.2, 0.002, 12.7, 0.2, 0.002];
-ub_irf = [1.9, 1.5, 1.9, 3.0, 0.500, 14.2, 2.0, 0.20, 14.2, 3.0, 0.20];
-cost_type = 'MLE';
-fit_bg = true;
-error_type = '95CI';
 
-[r_fitirf, r_fitirf_fit, irf_fit] = ...
-    fit_tcspc_gauss_irf_varpro(t, tcspc_data, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
 
 figure; 
 semilogy(t,squeeze(tcspc_data),'.','DisplayName','data');
