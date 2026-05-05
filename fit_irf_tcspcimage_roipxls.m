@@ -33,6 +33,9 @@ for d = 1:dir_n
     for s = 1:sub_n
         subname = sublist(s).name; subpath = fullfile(sublist(s).folder,subname,filesep);
         disp(['Processing directory ', subname, '...'])
+        % set up structure for fit data
+        fit_data = struct();
+
         % im_list = dir([subpath,'*.obf']); im_n = length(im_list);
         im_file = [subpath, subname, '.obf'];       
             
@@ -55,46 +58,47 @@ for d = 1:dir_n
             % monoexponential fit    
             [r_fitirf, r_fitirf_fit, irf_fit] = ...
                 fit_tcspc_gauss_irf_varpro(t, tcspc_data, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
+
+            % plot data + fits
+            figure; 
+            semilogy(t,squeeze(tcspc_data),'.','DisplayName','data');
+            hold on; grid on
+            semilogy(t,r_fitirf_fit, 'LineWidth',1.5, 'DisplayName','fit');
+            semilogy(t,irf_fit./max(irf_fit)*max(r_fitirf_fit), 'LineWidth', 1.5, 'DisplayName','irf');
+            ylim([min([min(r_fitirf_fit) min(tcspc_data)]) max(r_fitirf_fit)*1.05]);
+            legend ('FontSize', 12);
+            xlabel('time (ns)'); ylabel('counts');
+            title([subname, ' tcspc histogram of ROI pixels with monoexponential fit'], 'FontSize', 13, Interpreter='none');
+
+            % print fit parameters
+            ant_str = ([char(964), '_1: ',num2str(r_fitirf.taus(1)),' ns ', char(177),' ', num2str(r_fitirf.err_vals.taus(1)),' ns', ...
+                newline, 'background: ',num2str(r_fitirf.background), char(177),' ', num2str(r_fitirf.err_vals.background)]);
+            dim = [.69 .7, .1 .1];
+            annotation('textbox', 'Position',dim, String = ant_str, FontSize = 13)
+
+            savefig(gcf,[subpath, subname,'_tcspc_histogram'])
+            pause(3) % pause time to evaluate figure before closing
+            close(gcf)
+
         end
 
+        % populate structure with data to be saved
+        fit_data.t = t;
+        fit_data.tcspc = tcspc_data;
+        fit_data.fitirf = r_fitirf;
+        fit_data.fitirf_fit = r_fitirf_fit;
+        fit_data.irf_fit = irf_fit;        
         
-        
-        
-        
-        
-  
-
-
-
-
-      
-
-
+        save([subpath, subname, '_fitdata.mat'], 'fit_data')
 
     end % sub loop
 
-
-
 end % dir loop
 
-%% ===================================scratch Code======================
 
 
 
 
 
 
-figure; 
-semilogy(t,squeeze(tcspc_data),'.','DisplayName','data');
-hold on;
-semilogy(t,r_fitirf_fit,'DisplayName','fit');
-semilogy(t,irf_fit./max(irf_fit)*max(r_fitirf_fit),'DisplayName','irf');
-hold off
-grid on;
-legend;
-xlabel('time (ns)'); ylabel('counts');title('tcspc histogram of all pixels in mask with monoexponential fit');
-ylim([min([min(r_fitirf_fit) min(tcspc_data)]) max(r_fitirf_fit)*1.05]);
 
-% print fit parameters
-disp([char(964), '_1: ',num2str(r_fitirf.taus(1)),' ns ', char(177),' ', num2str(r_fitirf.err_vals.taus(1)),' ns', ...
-    newline, 'background: ',num2str(r_fitirf.background), char(177),' ', num2str(r_fitirf.err_vals.background)]);
