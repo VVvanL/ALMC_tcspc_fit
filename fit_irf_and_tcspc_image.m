@@ -91,7 +91,7 @@ for i = 1:n_layers
 end
 
 n_exp = length(x0);
-<<<<<<< HEAD
+% <<<<<<< HEAD
 % switch n_exp
 %     case 1
 %         x0 = [r_fitirf.taus',0];   lb = [0.1, x0(3)-0.25];     ub = [10, x0(3)+0.25];
@@ -102,7 +102,7 @@ n_exp = length(x0);
 % end
 
 x0 = [r_fitirf.taus',0];   lb = [0.1, 1, x0(3)-0.25];  ub = [5, 10, x0(3)+0.25];
-=======
+% =======
 if n_exp > n_exp_im_fit
     x0 = r_fitirf.taus(1:n_exp_im_fit)';
 elseif n_exp < n_exp_im_fit
@@ -126,7 +126,7 @@ switch n_exp_im_fit
     case 3
         x0 = [x0,0];   lb = [0.1, 1, 3, x0(4)-0.25]; ub = [5, 10, 20, x0(4)+0.25];
 end
->>>>>>> 329401ece270949a04868286c3014a0ad7446143
+% >>>>>>> 329401ece270949a04868286c3014a0ad7446143
 
 total_count_im = sum(im_data_tbin_xybin, 3);
 mask = total_count_im > threshold;

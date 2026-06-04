@@ -14,6 +14,7 @@ lb_irf = [0.5, 0.1, 0.5, 0.1, 0.005, 12.8, 0.2, 0.002, 12.7, 0.2, 0.002];
 ub_irf = [1.9, 1.5, 1.9, 3.0, 0.500, 14.2, 2.0, 0.20, 14.2, 3.0, 0.20];
 cost_type = 'MLE';
 fit_bg = true;
+fit_shift = false;
 error_type = '95CI';
 
 % parameters necessary for both options
@@ -21,6 +22,7 @@ dt = 0.025; % size of time bin in ns
 bin_size_xy = 7;    % xy bin size in pixels, must be odd
 bin_size_t = 4;     % bin size in time direction
 threshold = 0;  % minimum number of photon in TCSPC trace of a pixel so that the pixel will be fitted
+show_irf_estimate = true;
 
 
 
