@@ -45,7 +45,7 @@ if canUseParallelPool
     pool = gcp('nocreate');
     if isempty(pool)
         parpool;
-    endsudo 
+    end
 end
 
 % add path to bioformats
