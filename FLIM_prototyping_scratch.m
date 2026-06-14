@@ -14,13 +14,14 @@ disp('Done')
 %% Mask generateion
 % sum up all time bins to generate normal 2D image
 data_t_sum = squeeze(sum(data,3));
-threshold = prctile(data_t_sum,70,'all'); % set threshold based on count distribution
+threshold = prctile(data_t_sum,75,'all'); % set threshold based on count distribution
 mask = data_t_sum > threshold;
 % plot image intensity map 
 figure; 
 imagesc(data_t_sum);
 colormap('parula');
 colorbar;
+axis equal
 hold on;
 % overlay mask
 red_mask = cat(3, ones(size(mask)), zeros(size(mask)), zeros(size(mask)));
@@ -28,3 +29,72 @@ h_mask = imshow(red_mask);
 opacity = 0.3;
 set(h_mask, 'AlphaData', mask * opacity);
 hold off;
+
+% select fit option
+% TODO: set up separate parameter function
+% 1: uses autofit_tcspc_image
+% 2: uses fit_irf_and_tcspc_image
+fit_option = 2; 
+% parameters necessary for both options
+dt = 0.025; % size of time bin in ns
+bin_size_xy = 5;    % xy bin size in pixels, must be odd
+bin_size_t = 2;     % bin size in time direction
+cost_type = 'MLE';
+fit_bg = true;
+fit_shift = false;
+error_type = '95CI';
+% threshold = 2000;  % minimum number of photon in TCSPC trace of a pixel so that the pixel will be fitted
+show_irf_estimate = true;
+
+% parameters for option 2 (IRF fit)
+x0 = [1 4 7]; % initial life time guess for fit of overall counts that also fits the irf
+% x0_irf = [1.3, 0.15, 1.3, 0.3, 0.05, 13.5, 0.2, 0.02, 13.5, 0.3, 0.01]; % fit parameters for the irf
+x0_irf = [1.2, 0.15, 1.2, 0.3, 0.05, 13.5, 0.2, 0.02, 13.5, 0.3, 0.02];
+% [t0_1, std_1, t0_2, std_2, rel_amp_2, t0_3, std_
+n_exp_im_fit = 1; % number of exponents fitted for image
+
+%% Sum up all pixels in mask
+n_t_bins = size(data,3);
+data_xy_sum = zeros(1,1,n_t_bins);
+for i = 1 : n_t_bins
+    dmy = data(:,:,i);
+    data_xy_sum(1,1,i) = sum(dmy(mask),'all');
+end
+
+% plot in semilogarithmic plot
+figure;
+t = (0:size(data,3)-1)*dt;
+semilogy(t,squeeze(data_xy_sum));
+grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of pixels in mask')
+
+% turn on parallel pool if available
+if canUseParallelPool
+    pool = gcp('nocreate');
+    if isempty(pool)
+        parpool;
+    end
+end
+
+%% run the fit
+r_im = ...
+    fit_irf_and_tcspc_image(data, dt, x0, x0_irf, bin_size_xy,  ...
+    bin_size_t, n_exp_im_fit, threshold, fit_bg, fit_shift, cost_type, error_type, show_irf_estimate);
+
+%% plot false colour image
+figure;
+imagesc(r_im.taus(:,:,1));
+% colormap(parula(7))
+colorbar;
+axis equal
+
+%% plot fit result in pixel
+figure
+i = 40;
+j = 200;
+use_log = true;
+if r_im.mask(i,j)
+    pixel_results = get_pixel_results(r_im, i, j);
+    plot_tcspc_results(r_im.t, r_im.raw_data(i,j,:), r_im.irf, pixel_results, use_log);
+else
+    disp('Pixel was not fitted.')
+end
