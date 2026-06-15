@@ -1,24 +1,31 @@
-function r_im = fit_irf_and_tcspc_image(data, dt, x0, x0_irf, bin_size_xy,  bin_size_t, n_exp_im_fit, threshold, fit_bg, fit_shift, cost_type, error_type, show_irf_estimate)
+function r_im = fit_irf_and_tcspc_image(data, params)
 % first fit IRF and TCSPC of total counts together, then fit pixel by pixel
 % in TCSPC image using the optimized IRF
 
 % data: 3d array of TCSPC with x/y/t dimension
-% dt:   size of timebin in t dimension in ns
-% x0:   initial lifetime fit parameter(s). Is either 1x1, 1x2 or 1x3 array,
+%% unpack parameters for fitting
+dt = params.dt;   % size of timebin in t dimension in ns
+x0 = params.x0;   % initial lifetime fit parameter(s). Is either 1x1, 1x2 or 1x3 array,
+
 %       depending if mono-, bi-, or triexponential fit is wanted for
 %       initial fit of total signal which also determines IRF
-% x0_irf:   initial fit parameters for irf. The IRF is simulated by a 1, 2, 
+% initial fit parameters for irf. The IRF is simulated by a 1, 2, 
 %           or three gaussians. The first gaussian is defined by the time 
 %           bin position t0 (in ns) and the stdev of the gaussian, the 
 %           gaussians also have a scale factor to set their amplitude 
 %           relative to the first gaussian. Example array:
 %           [t0_gauss1, stdev_gauss1, t0_gauss2, stdev_gauss2,
 %           rel_amp_gauss2, t0_gauss3, stdev_gauss3, rel_amp_gauss3]
-% bin_size_xy:  number of pixels that will be binned together, must be odd,
-%               the binned image still has the same number of pixels
-% bin_size_t:   number of time bins that are binned together
-% n_exp_im_fit: number of exponent in image fit
-% threshold:    minimum counts in of entire TCSPC trace in a pixel after xy 
+x0_irf = params.x0_irf;
+
+%  number of pixels that will be binned together, must be odd,
+%  the binned image still has the same number of pixels
+bin_size_xy = params.bin_size_xy; 
+%    number of time bins that are binned together
+bin_size_t = params.bin_size_t;
+
+n_exp_im_fit = params.n_exp_im_fit; % : number of exponent in image fit
+threshold = params.threshold; %  minimum counts in of entire TCSPC trace in a pixel after xy 
 %               binning to do TCSPC fit of that pixel
 % fit_bg:   true/false, indicates whether background should be used as fit
 %           parameter when fitting the TCSPC image data. background will be

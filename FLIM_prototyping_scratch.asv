@@ -45,13 +45,9 @@ colormap('parula');
 colorbar;
 axis equal
 
-mask = total_count_im > threshold;
+mask = data_t_sum > threshold;
 
- % set threshold based on count distribution
-
-
-
-
+threshold = prctile(total_count_im, 75, 'all'); % set threshold based on count distribution
 
 % select fit option
 % TODO: set up separate parameter function
