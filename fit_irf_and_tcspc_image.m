@@ -25,18 +25,18 @@ bin_size_xy = params.bin_size_xy;
 bin_size_t = params.bin_size_t;
 
 n_exp_im_fit = params.n_exp_im_fit; % : number of exponent in image fit
-threshold = params.threshold; %  minimum counts in of entire TCSPC trace in a pixel after xy 
+mask = params.mask; %  minimum counts in of entire TCSPC trace in a pixel after xy 
 %               binning to do TCSPC fit of that pixel
-% fit_bg:   true/false, indicates whether background should be used as fit
+fit_bg = params.fit_bg; % :   true/false, indicates whether background should be used as fit
 %           parameter when fitting the TCSPC image data. background will be
 %           set to 0 if false
-% fit_shift:    true/false, indicates whether shift should be optimized in
+fit_shift = params.fit_shift; % :    true/false, indicates whether shift should be optimized in
 %               when fitting TCSPC image (best to set as false as IRF 
 %               fitting already takes care of time shift)
-% cost_type: 'MLE' or 'LS', 'MLE' is more optimal when fitting photons
-% error_type:   '1sigma' or '95CI', indicates which confidence interval is 
+cost_type = params.cost_type; % : 'MLE' or 'LS', 'MLE' is more optimal when fitting photons
+error_type = params.error_type; % :   '1sigma' or '95CI', indicates which confidence interval is 
 %               used for error bars
-% show_irf_estimate:    true/false, whether to show irf fit and overall fit
+show_irf_estimate = params.show_irf_estimate; % :    true/false, whether to show irf fit and overall fit
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % some parameters that usually do not need to be set
@@ -72,7 +72,7 @@ if n_pks>1
     end
 end
 
-[warning,r_fitirf, r_fitirf_fit, irf_fit] = evalc('fit_tcspc_gauss_irf_varpro(t_binned, data_xysum_tbin, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg_fitirf, error_type)');
+[~ ,r_fitirf, r_fitirf_fit, irf_fit] = evalc('fit_tcspc_gauss_irf_varpro(t_binned, data_xysum_tbin, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg_fitirf, error_type)');
 r_im = r_fitirf;
 if show_irf_estimate
     figure;
@@ -136,7 +136,7 @@ end
 % >>>>>>> 329401ece270949a04868286c3014a0ad7446143
 
 total_count_im = sum(im_data_tbin_xybin, 3);
-mask = total_count_im > threshold;
+% mask = total_count_im > threshold;
 im_size = size(im_data_tbin_xybin);
 
 % Pre-allocate

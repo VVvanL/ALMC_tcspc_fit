@@ -13,7 +13,7 @@ params.fit_shift = false;
 params.error_type = '95CI';
 params.show_irf_estimate = true;
 
-params.thr_prctile = 75; % count distribution cutoff percentage for threshold
+params.thr_snr = 4; % count distribution cutoff based on assumed SNR
 
 params.x0 = [1 4 7]; % initial life time guess for fit of overall counts that also fits the irf
 % fit parameters for the irf

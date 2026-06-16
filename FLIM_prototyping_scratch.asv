@@ -54,6 +54,14 @@ max_count = max(total_count_im, [], 'all');
 params.threshold = max_count / params.thr_snr;
 params.mask = total_count_im > params.threshold;
 
+%% Sum up all pixels in mask
+n_t_bins = size(data,3);
+data_xy_sum = zeros(1,1,n_t_bins);
+for i = 1 : n_t_bins
+    dmy = data(:,:,i);
+    data_xy_sum(1,1,i) = sum(dmy(mask),'all');
+end
+
 % plot in semilogarithmic plot
 figure;
 t = (0:size(data,3)-1)*dt;
