@@ -45,7 +45,7 @@ if canUseParallelPool
     pool = gcp('nocreate');
     if isempty(pool)
         parpool;
-    endsudo 
+    end
 end
 
 % add path to bioformats
@@ -79,7 +79,8 @@ xlabel('time (ns)'); ylabel('counts');title('tcspc histogram of all pixels')
 x0_irf = [1.2, 0.15, 1.2, 0.3, 0.05, 13.5, 0.2, 0.02, 13.5, 0.3, 0.02];
 % [t0_1, std_1, t0_2, std_2, rel_amp_2, t0_3, std_
 % r_im = fit_irf_and_tcspc_image(data, dt, x0, x0_irf, bin_size_xy, bin_size_t, n_exp_im_fit, threshold, fit_bg, fit_shift, cost_type, error_type, show_irf_estimate);
-r_im = fit_irf_and_tcspc_image(data, dt, x0, x0_irf, bin_size_xy,  bin_size_t, n_exp_im_fit, threshold, fit_bg, fit_shift, cost_type, error_type, show_irf_estimate);
+r_im = ...
+    fit_irf_and_tcspc_image(data, dt, x0, x0_irf, bin_size_xy,  bin_size_t, n_exp_im_fit, threshold, fit_bg, fit_shift, cost_type, error_type, show_irf_estimate);
 
 %% plot false colour image
 imagesc(r_im.taus(:,:,1));
