@@ -24,8 +24,9 @@ for d = 1:dir_n
         subname = sublist(s).name; subpath = fullfile(sublist(s).folder,subname,filesep);
         disp(['Processing directory ', subname, '...'])
 
-        % set up structure for fit data
+        % set up structure for fit data and image data
         fit_data = struct();
+        image_data = struct();
 
         % find TCSPC image file in sub-directory and load
         dataseries = 1;
@@ -33,6 +34,7 @@ for d = 1:dir_n
         [~ , raw_data] = ...
             evalc('bf_load_parts_v7(strcat(im_file),dataseries,-1,-1,-1,-1,-1)'); % use evalc to block annoying bioformats warnings
         data = squeeze(raw_data);
+        % TODO: create image plotting function (include pause and save?)
 
         %% generate sum projection and binned projection, then threshold based on SNR parameter
 
@@ -40,8 +42,17 @@ for d = 1:dir_n
         data_t_sum = squeeze(sum(data,3));        
         % calculate  bin_xy image
         total_count_im = conv2(data_t_sum, ones(params.bin_size_xy, params.bin_size_xy), 'same');
-
         % plot and save binned, summed image
+        figure; 
+        imagesc(total_count_im);
+        colormap('parula');
+        colorbar;
+        axis equal
+
+        % set threshold based on count distribution
+        max_count = max(total_count_im, [], 'all');
+        params.threshold = max_count / params.thr_snr;
+        params.mask = total_count_im > params.threshold;
 
 
     end
