@@ -20,7 +20,7 @@ disp('Done')
 
 % generate time axis t
 figure;
-t = (0:size(data,3)-1)*dt;
+t = (0:size(data,3)-1)*params.dt;
 % sum up all the pixels in the image
 tcspc_trace = squeeze(sum(data,[1,2]));
 % plot in semilogarithmic plot

@@ -47,6 +47,23 @@ colormap('parula');
 colorbar;
 axis equal
 
+% calculate TCSPC histogram for all xy/t binned pixels in mask
+% TODO: make into separate function?
+im_data_tbin = bin_array(data, params.bin_size_t, 3);
+n_t_bins = size(im_data_tbin,3);
+data_xy_sum = zeros(1,1,n_t_bins);
+for i = 1 : n_t_bins
+    dmy = data(:,:,i);
+    data_xy_sum(1,1,i) = sum(dmy(params.mask),'all');
+end
+% plot in semilogarithmic plot
+figure;
+% t = (0:size(data,3)-1)*dt;
+t = (0:n_t_bins- 1) * (params.dt * params.bin_size_t);
+semilogy(t,squeeze(data_xy_sum));
+grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of pixels in mask')
+
+
 % plot histogram of binned counts
 figure; histogram(total_count_im, 'Normalization', 'percentage')
 % set threshold based on count distribution

@@ -1,6 +1,7 @@
 function r_im = fit_irf_and_tcspc_image(data, params)
 % first fit IRF and TCSPC of total counts together, then fit pixel by pixel
 % in TCSPC image using the optimized IRF
+% Updated June 2026 to match new workflow
 
 % data: 3d array of TCSPC with x/y/t dimension
 %% unpack parameters for fitting
