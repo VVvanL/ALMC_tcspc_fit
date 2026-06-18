@@ -28,6 +28,7 @@ for d = 1:dir_n
         fit_data = struct();
 
         % find TCSPC image file in sub-directory and load
+        dataseries = 1;
         im_file = [subpath, subname, '.obf'];
         [~ , raw_data] = ...
             evalc('bf_load_parts_v7(strcat(im_file),dataseries,-1,-1,-1,-1,-1)'); % use evalc to block annoying bioformats warnings
