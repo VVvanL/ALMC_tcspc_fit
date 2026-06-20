@@ -1,4 +1,4 @@
-function [results, final_fit, normalized_irf] = fit_tcspc_gauss_irf_varpro(t, data, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type)
+function [results, final_fit, normalized_irf] = fit_tcspc_gauss_irf_varpro(t, data, params)
 % FIT_TCSPC_GAUSS_IRF_VARPRO
 %
 % PURPOSE:
@@ -12,6 +12,46 @@ function [results, final_fit, normalized_irf] = fit_tcspc_gauss_irf_varpro(t, da
 %       1 Gauss: [pos1, sig1]
 %       2 Gauss: [pos1, sig1, pos2, sig2, rel_amp2]
 %       3 Gauss: [pos1, sig1, pos2, sig2, rel_amp2, pos3, sig3, rel_amp3]
+
+%% unpack parameters for fitting
+% dt = params.dt;   % size of timebin in t dimension in ns
+x0 = params.x0;   % initial lifetime fit parameter(s). Is either 1x1, 1x2 or 1x3 array,
+lb = params.lb;   % lower bound for lifetime fit parameter(s)
+ub = params.ub;   % upper bound for lifetime fit parameter(s)
+
+%       depending if mono-, bi-, or triexponential fit is wanted for
+%       initial fit of total signal which also determines IRF
+% initial fit parameters for irf. The IRF is simulated by a 1, 2, 
+%           or three gaussians. The first gaussian is defined by the time 
+%           bin position t0 (in ns) and the stdev of the gaussian, the 
+%           gaussians also have a scale factor to set their amplitude 
+%           relative to the first gaussian. Example array:
+%           [t0_gauss1, stdev_gauss1, t0_gauss2, stdev_gauss2,
+%           rel_amp_gauss2, t0_gauss3, stdev_gauss3, rel_amp_gauss3]
+x0_irf = params.x0_irf;
+lb_irf = params.lb_irf;
+ub_irf = params.ub_irf;
+
+
+%  number of pixels that will be binned together, must be odd,
+%  the binned image still has the same number of pixels
+% bin_size_xy = params.bin_size_xy; 
+%    number of time bins that are binned together
+% bin_size_t = params.bin_size_t;
+
+% n_exp_im_fit = params.n_exp_im_fit; % : number of exponent in image fit
+% mask = params.mask; %  minimum counts in of entire TCSPC trace in a pixel after xy 
+%               binning to do TCSPC fit of that pixel
+fit_bg = params.fit_bg; % :   true/false, indicates whether background should be used as fit
+%           parameter when fitting the TCSPC image data. background will be
+%           set to 0 if false
+% fit_shift = params.fit_shift; % :    true/false, indicates whether shift should be optimized in
+%               when fitting TCSPC image (best to set as false as IRF 
+%               fitting already takes care of time shift)
+cost_type = params.cost_type; % : 'MLE' or 'LS', 'MLE' is more optimal when fitting photons
+error_type = params.error_type; % :   '1sigma' or '95CI', indicates which confidence interval is 
+%               used for error bars
+% show_irf_estimate = params.show_irf_estimate; % :    true/false, whether to show irf fit and overall fit
 
     % --- 1. Pre-processing ---
     t = t(:);           

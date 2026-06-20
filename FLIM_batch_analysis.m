@@ -38,7 +38,7 @@ for d = 1:dir_n
 
         %% generate sum projection and binned projection, then threshold based on SNR parameter
 
-        % sum up all time bins to generate normal 2D image
+        % sum up all time bins to generate normal 2D image (no time-binning in this step)
         data_t_sum = squeeze(sum(data,3));        
         % calculate  bin_xy image
         total_count_im = conv2(data_t_sum, ones(params.bin_size_xy, params.bin_size_xy), 'same');
@@ -50,10 +50,24 @@ for d = 1:dir_n
         axis equal
 
         % set threshold based on count distribution
-        max_count = max(total_count_im, [], 'all');
-        params.threshold = max_count / params.thr_snr;
+        params.max_count = max(total_count_im, [], 'all');
+        params.threshold = params.max_count / params.thr_snr;
         params.mask = total_count_im > params.threshold;
 
+        %% Calculate global lifetime for all pixels in mask region (no time binning)
+
+        % Sum up all pixels in mask
+        n_t_bins = size(data,3);
+        data_xy_sum = zeros(1,1,n_t_bins);
+        for i = 1 : n_t_bins
+            dmy = data(:,:,i);
+            data_xy_sum(1,1,i) = sum(dmy(params.mask),'all');
+        end
+
+        t = (0:size(data,3)-1)*params.dt; % convert bins to sec units
+
+        % Fit IRF and data with monoexponential fit
+        [r_fitirf, r_fitirf_fit, irf_fit] = fit_tcspc_gauss_irf_varpro(t, data_xy_sum, params);
 
     end
 

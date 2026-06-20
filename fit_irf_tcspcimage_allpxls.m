@@ -57,7 +57,7 @@ semilogy(t,squeeze(data_xy_sum));
 grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of pixels in mask')
 
 %% Fit IRF and data with biexponential fit
-x0 = [1,4]; lb = [0.1, 2]; ub = [5, 10];
+params.x0 = [1,4]; params.lb = [0.1, 2]; params.ub = [5, 10];
 x0_irf = [1.2, 0.15, 1.2, 0.3, 0.05, 13.5, 0.2, 0.02, 13.5, 0.3, 0.02];
 lb_irf = [0.5, 0.1, 0.5, 0.1, 0.005, 12.8, 0.2, 0.002, 12.7, 0.2, 0.002];
 ub_irf = [1.9, 1.5, 1.9, 3.0, 0.500, 14.2, 2.0, 0.20, 14.2, 3.0, 0.20];
@@ -66,7 +66,7 @@ fit_bg = true;
 error_type = '95CI';
 
 [r_fitirf, r_fitirf_fit, irf_fit] = ...
-    fit_tcspc_gauss_irf_varpro(t, data_xy_sum, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
+    fit_tcspc_gauss_irf_varpro(t, data_xy_sum, params);
 
 % plot decay with IRFs and fit
 figure;
@@ -86,7 +86,7 @@ disp([char(964), '_1: ',num2str(r_fitirf.taus(1)),' ns ', char(177),' ', num2str
     newline, 'background: ',num2str(r_fitirf.background), char(177),' ', num2str(r_fitirf.err_vals.background)]);
 
 %% Fit IRF and data with monoexponential fit
-x0 = [1]; lb = [0.1]; ub = [10];
+params.x0 = [3]; params.lb = [0.1]; params.ub = [10];
 x0_irf = [1.2, 0.15, 1.2, 0.3, 0.05, 13.5, 0.2, 0.02, 13.5, 0.3, 0.02];
 lb_irf = [0.5, 0.1, 0.5, 0.1, 0.005, 12.8, 0.2, 0.002, 12.7, 0.2, 0.002];
 ub_irf = [1.9, 1.5, 1.9, 3.0, 0.500, 14.2, 2.0, 0.20, 14.2, 3.0, 0.20];
@@ -94,8 +94,9 @@ cost_type = 'MLE';
 fit_bg = true;
 error_type = '95CI';
 
-[r_fitirf, r_fitirf_fit, irf_fit] = ...
-    fit_tcspc_gauss_irf_varpro(t, data_xy_sum, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
+[r_fitirf, r_fitirf_fit, irf_fit] = fit_tcspc_gauss_irf_varpro(t, data_xy_sum, params);
+% [r_fitirf, r_fitirf_fit, irf_fit] = ...
+%     fit_tcspc_gauss_irf_varpro(t, data_xy_sum, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg, error_type);
 % [warning,r_fitirf, r_fitirf_fit, irf_fit] = evalc('fit_tcspc_gauss_irf_varpro(t, data_xy_sum, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg_fitirf, error_type)');
 
 figure; 
