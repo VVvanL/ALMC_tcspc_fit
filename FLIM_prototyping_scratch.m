@@ -40,22 +40,38 @@ im_data_tbin_xybin = im_data_tbin;
 for i = 1:n_layers
     im_data_tbin_xybin(:,:,i) = conv2(im_data_tbin(:,:,i), ones(params.bin_size_xy, params.bin_size_xy), 'same');
 end
-total_count_im = sum(im_data_tbin_xybin, 3);
+total_count_im = sum(im_data_tbin_xybin, 3); % not really useful, just convolve sum image
 figure; 
 imagesc(total_count_im);
 colormap('parula');
 colorbar;
 axis equal
 
+% binned image histogram (all pixels)
+tcspc_trace = squeeze(sum(im_data_tbin_xybin,[1,2]));
+t_bin = (0:n_layers - 1) * (params.dt * params.bin_size_t);
+figure; semilogy(t_bin,tcspc_trace);
+grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of all pixels (tbin,xybin)')
+
+% plot histogram of binned counts
+figure; histogram(total_count_im, 'Normalization', 'percentage')
+% set threshold based on count distribution
+params.max_count = max(total_count_im, [], 'all');
+params.threshold = params.max_count / params.thr_snr;
+params.mask = total_count_im > params.threshold;
+
 % calculate TCSPC histogram for all xy/t binned pixels in mask
-% TODO: make into separate function?
-im_data_tbin = bin_array(data, params.bin_size_t, 3);
-n_t_bins = size(im_data_tbin,3);
-data_xy_sum = zeros(1,1,n_t_bins);
-for i = 1 : n_t_bins
-    dmy = data(:,:,i);
-    data_xy_sum(1,1,i) = sum(dmy(params.mask),'all');
+mask_data_xy_sum = zeros(1,1,n_layers);
+for i = 1 : n_layers
+    dmy = im_data_tbin_xybin(:,:,i);
+    mask_data_xy_sum(1,1,i) = sum(dmy(params.mask),'all');
 end
+
+% plot in semilogarithmic plot
+figure;
+semilogy(t_bin,squeeze(mask_data_xy_sum));
+grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of pixels in mask')
+
 % plot in semilogarithmic plot
 figure;
 % t = (0:size(data,3)-1)*dt;
@@ -63,19 +79,59 @@ t = (0:n_t_bins- 1) * (params.dt * params.bin_size_t);
 semilogy(t,squeeze(data_xy_sum));
 grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of pixels in mask')
 
+%% Fit IRF and data with biexponential fit
+params.x0 = [1,4]; params.lb = [0.1, 2]; params.ub = [5, 10]; % parameters specific for biexponential fit
+[r_fitirf, r_fitirf_fit, irf_fit] = ...
+    fit_tcspc_gauss_irf_varpro(t_bin, mask_data_xy_sum, params);
 
-% plot histogram of binned counts
-figure; histogram(total_count_im, 'Normalization', 'percentage')
-% set threshold based on count distribution
-max_count = max(total_count_im, [], 'all');
-params.threshold = max_count / params.thr_snr;
-params.mask = total_count_im > params.threshold;
+% plot decay with IRFs and fit
+figure;
+semilogy(t_bin,squeeze(mask_data_xy_sum),'.','DisplayName','data');
+hold on;
+semilogy(t_bin,r_fitirf_fit,'DisplayName','fit');
+semilogy(t_bin,irf_fit./max(irf_fit)*max(r_fitirf_fit),'DisplayName','irf');
+hold off
+grid on;
+legend;
+xlabel('time (ns)'); ylabel('counts');title('tcspc histogram of all pixels in mask with biexponential fit');
+ylim([min([min(r_fitirf_fit) min(mask_data_xy_sum)]) max(r_fitirf_fit)*1.05]);
+
+ant_str = ([char(964), '_1: ',num2str(r_fitirf.taus(1)),' ns ', char(177),' ', num2str(r_fitirf.err_vals.taus(1)),' ns', ...
+    newline, char(964), '_2: ',num2str(r_fitirf.taus(2)),' ns', char(177),' ', num2str(r_fitirf.err_vals.taus(2)),' ns', ...
+    newline, 'background: ',num2str(r_fitirf.background), char(177),' ', num2str(r_fitirf.err_vals.background)]);
+dim = [.66 .7, .1 .1];
+annotation('textbox', 'Position',dim, String = ant_str, FontSize = 13)
+
+%% Fit IRF and data with monoexponential fit
+params.x0 = 3; params.lb = 0.1; params.ub = 10;
+[r_fitirf, r_fitirf_fit, irf_fit] = fit_tcspc_gauss_irf_varpro(t_bin, mask_data_xy_sum, params);
+
+figure; 
+semilogy(t_bin,squeeze(mask_data_xy_sum),'.','DisplayName','data');
+hold on;
+semilogy(t_bin,r_fitirf_fit,'DisplayName','fit');
+semilogy(t_bin,irf_fit./max(irf_fit)*max(r_fitirf_fit),'DisplayName','irf');
+hold off
+grid on;
+legend;
+xlabel('time (ns)'); ylabel('counts');title('tcspc histogram of all pixels in mask with monoexponential fit');
+ylim([min([min(r_fitirf_fit) min(mask_data_xy_sum)]) max(r_fitirf_fit)*1.05]);
+% print fit parameters
+ant_str = ([char(964), '_1: ',num2str(r_fitirf.taus(1)),' ns ', char(177),' ', num2str(r_fitirf.err_vals.taus(1)),' ns', ...
+    newline, 'background: ',num2str(r_fitirf.background), char(177),' ', num2str(r_fitirf.err_vals.background)]);
+dim = [.66 .7, .1 .1];
+annotation('textbox', 'Position',dim, String = ant_str, FontSize = 13)
+
+
+
+
+
 
 % plot in semilogarithmic plot
 figure;
-t = (0:size(data,3)-1)*dt;
+t = (0:size(data,3)-1)*params.dt;
 semilogy(t,squeeze(data_xy_sum));
-grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of pixels in mask')
+grid on; xlabel('time (ns)'); ylabel('counts'); title('tcspc histogram of pixels in image')
 
 % turn on parallel pool if available
 if canUseParallelPool
