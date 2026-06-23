@@ -60,7 +60,7 @@ params.max_count = max(total_count_im, [], 'all');
 params.threshold = params.max_count / params.thr_snr;
 params.mask = total_count_im > params.threshold;
 
-% calculate TCSPC histogram for all xy/t binned pixels in mask
+% calculate mask TCSPC image (xy and t binned)
 mask_data_xy_sum = zeros(1,1,n_layers);
 for i = 1 : n_layers
     dmy = im_data_tbin_xybin(:,:,i);
@@ -94,7 +94,7 @@ hold off
 grid on;
 legend;
 xlabel('time (ns)'); ylabel('counts');title('tcspc histogram of all pixels in mask with biexponential fit');
-ylim([min([min(r_fitirf_fit) min(mask_data_xy_sum)]) max(r_fitirf_fit)*1.05]);
+ylim([min(r_fitirf_fit) min(mask_data_xy_sum)]) max(r_fitirf_fit)*1.05]);
 
 ant_str = ([char(964), '_1: ',num2str(r_fitirf.taus(1)),' ns ', char(177),' ', num2str(r_fitirf.err_vals.taus(1)),' ns', ...
     newline, char(964), '_2: ',num2str(r_fitirf.taus(2)),' ns', char(177),' ', num2str(r_fitirf.err_vals.taus(2)),' ns', ...
