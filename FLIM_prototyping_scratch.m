@@ -13,7 +13,7 @@ data = squeeze(raw_data);
 disp('Done')
 
 
-%% Mask generateion
+%% Mask generation
 % sum up all time bins to generate normal 2D image
 data_t_sum = squeeze(sum(data,3));
 % threshold = prctile(data_t_sum,75,'all'); % set threshold based on count distribution
@@ -94,7 +94,7 @@ hold off
 grid on;
 legend;
 xlabel('time (ns)'); ylabel('counts');title('tcspc histogram of all pixels in mask with biexponential fit');
-ylim([min(r_fitirf_fit) min(mask_data_xy_sum)]) max(r_fitirf_fit)*1.05]);
+% ylim([min(r_fitirf_fit) min(mask_data_xy_sum)]) max(r_fitirf_fit)*1.05]);
 
 ant_str = ([char(964), '_1: ',num2str(r_fitirf.taus(1)),' ns ', char(177),' ', num2str(r_fitirf.err_vals.taus(1)),' ns', ...
     newline, char(964), '_2: ',num2str(r_fitirf.taus(2)),' ns', char(177),' ', num2str(r_fitirf.err_vals.taus(2)),' ns', ...
@@ -149,15 +149,15 @@ r_im = fit_irf_and_tcspc_image(data, params);
 
 %% plot false colour image
 figure;
-imagesc(r_im.taus(:,:,1));
+imagesc(r_im.taus(:,:,2));
 % colormap(parula(7))
 colorbar;
 axis equal
 
 %% plot fit result in pixel
 figure
-i = 40;
-j = 200;
+i = 37;
+j = 121;
 use_log = true;
 if r_im.mask(i,j)
     pixel_results = get_pixel_results(r_im, i, j);

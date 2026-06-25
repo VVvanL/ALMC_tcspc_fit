@@ -73,7 +73,7 @@ if n_pks>1
     end
 end
 
-[~ ,r_fitirf, r_fitirf_fit, irf_fit] = evalc('fit_tcspc_gauss_irf_varpro(t_binned, data_xysum_tbin, x0, lb, ub, x0_irf, lb_irf, ub_irf, cost_type, fit_bg_fitirf, error_type)');
+[~ ,r_fitirf, r_fitirf_fit, irf_fit] = evalc('fit_tcspc_gauss_irf_varpro(t_binned, data_xysum_tbin, params)');
 r_im = r_fitirf;
 if show_irf_estimate
     figure;

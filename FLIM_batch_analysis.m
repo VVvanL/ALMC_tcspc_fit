@@ -94,7 +94,7 @@ for d = 1:dir_n
         legend;
         xlabel('time (ns)'); ylabel('counts');title('tcspc histogram of all pixels in mask with biexponential fit');
         % ylim([min([min(r_fitirf_fit) min(mask_data_xy_sum)]) max(r_fitirf_fit)*1.05]);
-        ylim([min(r_fitirf_fit) max(r_fitirf_fit)*1.05])
+        ylim([min(r_fitirf_fit)*0.9 max(r_fitirf_fit)*1.1])
 
         ant_str = ([char(964), '_1: ',num2str(r_fitirf.taus(1)),' ns ', char(177),' ', num2str(r_fitirf.err_vals.taus(1)),' ns', ...
             newline, char(964), '_2: ',num2str(r_fitirf.taus(2)),' ns', char(177),' ', num2str(r_fitirf.err_vals.taus(2)),' ns', ...
@@ -123,10 +123,6 @@ for d = 1:dir_n
             newline, 'background: ',num2str(r_fitirf.background), char(177),' ', num2str(r_fitirf.err_vals.background)]);
         dim = [.66 .7, .1 .1];
         annotation('textbox', 'Position',dim, String = ant_str, FontSize = 13)
-
-
-
-
         %
 
     end
