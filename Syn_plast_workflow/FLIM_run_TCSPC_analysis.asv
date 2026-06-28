@@ -10,14 +10,16 @@ params = setTCSPC_fit_parameters();
 folderN = uigetdir; folderN = [folderN,filesep];
 foldparts = strsplit(folderN,filesep); dirname = foldparts{end-1}; clear foldparts
 
-if make_subdirectories; create_subdirectories(folderN, params.im_ext); end 
+if make_subdirectories; create_subdirectories(folderN, params.im_ext); end %#ok<BDSCI>
+
 sublist = dir(folderN); sublist = sublist([sublist.isdir]); sublist(1:2) = []; sub_n = size(sublist,1);
+
+
+
 
 for s = 1:sub_n
     subname = sublist(s).name; subpath = fullfile(sublist(s).folder,subname,filesep);
     disp(['Processing directory ', subname, '...'])
-    fig_dir = [subpath, subname, '_figures',filesep];
-    if ~exist(fig_dir, 'dir'); mkdir(fig_dir); end
 
     % set up structure for fit data and image data
     fit_data = struct();
