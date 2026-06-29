@@ -62,7 +62,6 @@ for d = 1:dir_n
         axis equal 
 
         %% calculate bin_t / bin_xy image
-
         im_data_tbin = bin_array(data, params.bin_size_t, 3);
         n_layers = size(im_data_tbin, 3);
         im_data_tbin_xybin = im_data_tbin;
