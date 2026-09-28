@@ -12,15 +12,19 @@ foldparts = strsplit(folderN,filesep); dirname = foldparts{end-1}; clear foldpar
 if make_subdirectories; create_subdirectories(folderN, params.im_ext); end %#ok<UNRCH>
 sublist = dir(folderN); sublist = sublist([sublist.isdir]); sublist(1:2) = []; sub_n = size(sublist,1);
 
+% set up structure for aggregated data from experiment
+aggregate_data = struct();
+% image_data = struct();
+
+%% loop through image data
 for s = 1:sub_n
     subname = sublist(s).name; subpath = fullfile(sublist(s).folder,subname,filesep);
     disp(['Processing directory ', subname, '...'])
     fig_dir = [subpath, subname, '_figures',filesep];
-    if ~exist(fig_dir, 'dir'); mkdir(fig_dir); end
-
-    % set up structure for fit data and image data
+    if ~exist(fig_dir, 'dir'); mkdir(fig_dir); end  
+    
+    % structure to store TCSPC and fit data
     fit_data = struct();
-    image_data = struct(); 
 
     % find TCSPC image file in sub-directory and load
     dataseries = 1;
@@ -31,15 +35,19 @@ for s = 1:sub_n
 
     % sum up all time bins to generate normal 2D image,
     data_t_sum = squeeze(sum(data,3));
-    h_sum = plot_intensity_image(data_t_sum); % plot image
+    % h_sum = plot_intensity_image(data_t_sum); % plot image
+
     % add title, save figure
     % calculate  bin_xy image (2D image)
     data_t_sum_xy_bin= conv2(data_t_sum, ones(params.bin_size_xy, params.bin_size_xy), 'same');
     h_binsum = plot_intensity_image(data_t_sum_xy_bin); % plot image
+    savefig(h_binsum, [fig_dir, subname, '_binned_sum.fig'])
     
-    % determine threshold for total mask and pixel fitting
-    [params, h_counthist, h_mask] = determine_count_threshold(data_t_sum_xy_bin, params);
-
+    % determine threshold for total mask and pixel fitting  (function call)
+    [params, h_hist, h_mask] = determine_count_threshold(data_t_sum_xy_bin, params);
+    savefig(h_hist, [fig_dir, subname, '_count_hist.fig'])
+    savefig(h_mask, [fig_dir, subname, '_mask.fig'])
+    
     %% calculate bin_t / bin_xy image
     im_data_tbin = bin_array(data, params.bin_size_t, 3);
     n_layers = size(im_data_tbin, 3);
@@ -47,7 +55,7 @@ for s = 1:sub_n
     for i = 1:n_layers
         im_data_tbin_xybin(:,:,i) = conv2(im_data_tbin(:,:,i), ones(params.bin_size_xy, params.bin_size_xy), 'same');
     end
-    t_bin = (0:n_layers - 1) * (params.dt * params.bin_size_t); % convert bins to seconds
+    t_bin = (0:n_layers - 1) * (params.dt * params.bin_size_t); % convert bins to seconds   
 
     % calculate mask TCSPC from binned xy, binned t image (global mask fit)
     mask_data_xy_sum = zeros(1,1,n_layers);
@@ -56,7 +64,15 @@ for s = 1:sub_n
         mask_data_xy_sum(1,1,i) = sum(dmy(params.mask),'all');
     end
 
+    TCSPC_trace = squeeze(mask_data_xy_sum);
 
 
+    
+    %% store data/params in structure and save
+
+    fit_data.t_bin = t_bin;
+    fit_data.TCSPC_trace = TCSPC_trace;
+
+    save([subpath, subname, '_data.mat'], 'params', 'fit_data')
 
 end
