@@ -1,9 +1,9 @@
 % Working script for processing/analyzing TCSPC images
 clearvars; close all
 
-make_subdirectories = false;  % flag as 'true' if individual images need to be organized into sub-directories
+make_subdirectories = true;  % flag as 'true' if individual images need to be organized into sub-directories
 
-conditions = {'mTq','CaN_YT'};
+conditions = {'CaN_mTq', 'CaNwt_ST', 'CaNf470l_ST', 'CaNe282k_ST'};
 cnd_n = length(conditions);
 
 params = setTCSPC_fit_parameters();
