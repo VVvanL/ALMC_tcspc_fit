@@ -66,13 +66,44 @@ for s = 1:sub_n
 
     TCSPC_trace = squeeze(mask_data_xy_sum);
 
-
-    
-    %% store data/params in structure and save
-
     fit_data.t_bin = t_bin;
     fit_data.TCSPC_trace = TCSPC_trace;
 
+    %% Fit IRF and data with monoexponential fit
+    fit_type = 1;
+    params.x0 = 3; params.lb = 0.1; params.ub = 10; % parameters specific for monoexponential fit
+    [r_fitirf, r_fitirf_fit, irf_fit] = fit_tcspc_gauss_irf_varpro(t_bin, mask_data_xy_sum, params);
+    
+    % plot data trace with fit
+    h_mono = plot_TCSPC_fit(t_bin, TCSPC_trace, r_fitirf, r_fitirf_fit, irf_fit, fit_type);
+    title([subname, ': monoexponential fit'], 'Interpreter','none')
+    savefig(h_mono, [fig_dir, subname, '_TCSPC_monoexp_fit.fig'])
+
+    fit_data.mono.r_fitirf = r_fitirf;
+    fit_data.mono.r_fitirf_fit = r_fitirf_fit;
+    fit_data.mono.ifr_fit = irf_fit;
+
+    %% Fit IRF and data with biexponential fit
+    fit_type = 2;
+    params.x0 = [1,4]; params.lb = [0.1, 2]; params.ub = [5, 10]; % parameters specific for biexponential fit
+    [r_fitirf, r_fitirf_fit, irf_fit] = ...
+        fit_tcspc_gauss_irf_varpro(t_bin, mask_data_xy_sum, params);
+    
+    % plot data trace with fit
+    h_bit = plot_TCSPC_fit(t_bin, TCSPC_trace, r_fitirf, r_fitirf_fit, irf_fit, fit_type);
+    title([subname, ': biexponential fit'], 'Interpreter','none')
+    savefig(h_bit, [fig_dir, subname, '_TCSPC_biexp_fit.fig'])
+
+    fit_data.bi.r_fitirf = r_fitirf;
+    fit_data.bi.r_fitirf_fit = r_fitirf_fit;
+    fit_data.bi.ifr_fit = irf_fit;
+
     save([subpath, subname, '_data.mat'], 'params', 'fit_data')
+    close all
+
+    acq_field = matlab.lang.makeValidName(subname);
+    aggregate_data.(acq_field).fit_data = fit_data;
 
 end
+
+save([folderN, dirname, '_fitdata.mat'], 'params', 'aggregate_data')

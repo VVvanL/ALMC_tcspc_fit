@@ -107,7 +107,8 @@ params.x0 = 3; params.lb = 0.1; params.ub = 10;
 [r_fitirf, r_fitirf_fit, irf_fit] = fit_tcspc_gauss_irf_varpro(t_bin, mask_data_xy_sum, params);
 
 figure; 
-semilogy(t_bin,squeeze(mask_data_xy_sum),'.','DisplayName','data');
+% semilogy(t_bin,squeeze(mask_data_xy_sum),'.','DisplayName','data');
+semilogy(t_bin, TCSPC_trace,'.','DisplayName','data');
 hold on;
 semilogy(t_bin,r_fitirf_fit,'DisplayName','fit');
 semilogy(t_bin,irf_fit./max(irf_fit)*max(r_fitirf_fit),'DisplayName','irf');

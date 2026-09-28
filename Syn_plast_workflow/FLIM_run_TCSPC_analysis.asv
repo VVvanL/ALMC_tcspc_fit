@@ -66,8 +66,23 @@ for s = 1:sub_n
 
     TCSPC_trace = squeeze(mask_data_xy_sum);
 
+    %% Fit IRF and data with monoexponential fit
+    params.x0 = 3; params.lb = 0.1; params.ub = 10; % parameters specific for monoexponential fit
+    [r_fitirf, r_fitirf_fit, irf_fit] = fit_tcspc_gauss_irf_varpro(t_bin, mask_data_xy_sum, params);
+    
+    % plot data trace with fit
+    h_mono = plot_TCSPC_fit(t_bin, TCSPC_trace, r_fitirf, r_fitirf_fit, irf_fit);
+    title([subname, ': monoexponential fit'], 'Interpreter','none')
+
+    fit
+
+
+    
+    %% store data/params in structure and save
 
     fit_data.t_bin = t_bin;
-    fit_data.TCSPC
+    fit_data.TCSPC_trace = TCSPC_trace;
+
+    save([subpath, subname, '_data.mat'], 'params', 'fit_data')
 
 end
