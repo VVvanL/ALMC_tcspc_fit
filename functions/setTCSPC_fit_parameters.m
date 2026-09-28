@@ -6,9 +6,9 @@ params = struct();
 
 params.im_ext = '*.obf'; % extension for image files
 
-params.dt = 0.025; % size of time bin in ns
+params.dt = 0.100; % size of time bin in ns
 params.bin_size_xy = 7;    % xy bin size in pixels, must be odd
-params.bin_size_t = 4;     % bin size in time direction
+params.bin_size_t = 1;     % bin size in time direction
 params.cost_type = 'MLE';
 params.fit_bg = true;
 params.fit_shift = false;

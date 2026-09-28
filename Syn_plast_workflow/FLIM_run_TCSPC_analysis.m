@@ -3,7 +3,7 @@ clearvars; close all
 
 make_subdirectories = false;  % flag as 'true' if individual images need to be organized into sub-directories
 
-conditions = {'CaN_mTq', 'CaNwt_ST', 'sReach_mTq2'};
+conditions = {'mTq','CaN_YT'};
 cnd_n = length(conditions);
 
 params = setTCSPC_fit_parameters();
@@ -139,8 +139,8 @@ for acq = 1:acq_n
 end
 
 tau_data.condition = categorical(tau_data.condition);
-figure; 
+h_box = figure; 
 boxchart(tau_data.condition, tau_data.tau)
-
+savefig(h_box, [folderN, dirname,'_boxchart.fig'])
 
 save([folderN, dirname, '_fitdata.mat'], 'params', 'aggregate_data', 'tau_data')
