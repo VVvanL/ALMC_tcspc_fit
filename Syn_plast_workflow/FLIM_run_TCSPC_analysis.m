@@ -2,6 +2,10 @@
 clearvars; close all
 
 make_subdirectories = false;  % flag as 'true' if individual images need to be organized into sub-directories
+
+conditions = {'CaN_mTq', 'CaNwt_ST', 'sReach_mTq2'};
+cnd_n = length(conditions);
+
 params = setTCSPC_fit_parameters();
 
 %% select parent directory
@@ -106,4 +110,37 @@ for s = 1:sub_n
 
 end
 
-save([folderN, dirname, '_fitdata.mat'], 'params', 'aggregate_data')
+%% create aggregate data-table for tau values (monoexponential only temp)
+
+tau_data = struct();
+tau_data.condition = {};
+tau_data.tau = [];
+
+acq_names = fieldnames(aggregate_data);
+acq_n = length(acq_names);
+
+for acq = 1:acq_n
+    acq_field = acq_names{acq};
+
+    for cnd = 1:cnd_n
+        if contains(acq_field,conditions{cnd})
+            cnd_str = conditions{cnd}; 
+        else
+            continue            
+        end
+
+        tau_data.condition = vertcat(tau_data.condition, cnd_str);
+        
+        tau = aggregate_data.(acq_field).fit_data.mono.r_fitirf.taus;
+        tau_data.tau = vertcat(tau_data.tau, tau);
+    
+    end
+
+end
+
+tau_data.condition = categorical(tau_data.condition);
+figure; 
+boxchart(tau_data.condition, tau_data.tau)
+
+
+save([folderN, dirname, '_fitdata.mat'], 'params', 'aggregate_data', 'tau_data')
